@@ -27,7 +27,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --no-frozen-lockfile
-      - run: pnpm build
+      - run: npx vite build
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:
