@@ -9,30 +9,47 @@ interface Props {
 
 interface FieldProps {
   label: string;
+  hint: string;
   value: number;
   min: number;
   max: number;
   step: number;
+  prefix?: string;
   suffix?: string;
   onChange: (n: number) => void;
   testId: string;
 }
 
-function Field({ label, value, min, max, step, suffix, onChange, testId }: FieldProps) {
+function Field({ label, hint, value, min, max, step, prefix, suffix, onChange, testId }: FieldProps) {
+  const commit = (raw: string) => {
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return;
+    const clamped = Math.min(max, Math.max(min, parsed));
+    onChange(clamped);
+  };
+
   return (
-    <div className="field">
-      <div className="field-head">
-        <label>{label}</label>
-        <input
-          type="number"
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(e) => onChange(Number(e.target.value))}
-          data-testid={testId}
-        />
+    <div className="input-row">
+      <div className="input-head">
+        <label htmlFor={testId}>{label}</label>
+
+        <div className="input-box">
+          {prefix && <span className="prefix">{prefix}</span>}
+          <input
+            id={testId}
+            type="number"
+            value={value}
+            min={min}
+            max={max}
+            step={step}
+            onChange={(e) => commit(e.target.value)}
+            onBlur={(e) => commit(e.target.value)}
+            data-testid={testId}
+          />
+          {suffix && <span className="suffix">{suffix}</span>}
+        </div>
       </div>
+
       <input
         type="range"
         value={value}
@@ -40,9 +57,10 @@ function Field({ label, value, min, max, step, suffix, onChange, testId }: Field
         max={max}
         step={step}
         onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={label}
+        aria-label={`${label} slider`}
       />
-      {suffix && <span className="field-suffix">{suffix}</span>}
+
+      <p className="hint">{hint}</p>
     </div>
   );
 }
@@ -51,13 +69,17 @@ export default function InputPanel({ inputs, currency, onChange, onCurrencyChang
   const set = (key: keyof Inputs) => (n: number) => onChange({ ...inputs, [key]: n });
 
   return (
-    <aside className="panel input-panel">
-      <h2>Inputs</h2>
-
-      <div className="field">
-        <div className="field-head">
-          <label>Currency</label>
-          <select value={currency} onChange={(e) => onCurrencyChange(e.target.value)} data-testid="currency">
+    <div className="card">
+      <div className="card-head">
+        <h2>Your numbers</h2>
+        <div className="currency-row">
+          <label htmlFor="currency">Currency</label>
+          <select
+            id="currency"
+            value={currency}
+            onChange={(e) => onCurrencyChange(e.target.value)}
+            data-testid="currency"
+          >
             <option>KES</option>
             <option>USD</option>
             <option>EUR</option>
@@ -66,20 +88,65 @@ export default function InputPanel({ inputs, currency, onChange, onCurrencyChang
         </div>
       </div>
 
-      <Field label="Unit price" value={inputs.price} min={1} max={2000} step={1}
-             onChange={set('price')} testId="price" />
-      <Field label="Variable cost per unit" value={inputs.variableCost} min={0} max={2000} step={1}
-             onChange={set('variableCost')} testId="variableCost" />
-      <Field label="Fixed costs (monthly)" value={inputs.fixedCosts} min={0} max={500000} step={1000}
-             onChange={set('fixedCosts')} testId="fixedCosts" />
-      <Field label="Expected volume (units/month)" value={inputs.volume} min={0} max={20000} step={50}
-             onChange={set('volume')} testId="volume" />
-      <Field label="Monthly volume growth" value={inputs.growthRate} min={-20} max={50} step={1}
-             suffix="%" onChange={set('growthRate')} testId="growthRate" />
+      <Field
+        label="Selling price per item"
+        hint="What a customer pays you for one item."
+        value={inputs.price}
+        min={1}
+        max={2000}
+        step={1}
+        prefix={currency}
+        onChange={set('price')}
+        testId="price"
+      />
 
-      <p className="panel-note">
-        Contribution margin = price − variable cost. Break-even = fixed costs ÷ contribution margin.
-      </p>
-    </aside>
+      <Field
+        label="Cost per item"
+        hint="What you pay to buy or make one item."
+        value={inputs.variableCost}
+        min={0}
+        max={2000}
+        step={1}
+        prefix={currency}
+        onChange={set('variableCost')}
+        testId="variableCost"
+      />
+
+      <Field
+        label="Monthly fixed costs"
+        hint="Rent, salaries and bills you pay every month, even if you sell nothing."
+        value={inputs.fixedCosts}
+        min={0}
+        max={500000}
+        step={1000}
+        prefix={currency}
+        onChange={set('fixedCosts')}
+        testId="fixedCosts"
+      />
+
+      <Field
+        label="Items sold per month"
+        hint="An average month of sales."
+        value={inputs.volume}
+        min={0}
+        max={20000}
+        step={50}
+        suffix="items"
+        onChange={set('volume')}
+        testId="volume"
+      />
+
+      <Field
+        label="Monthly sales growth"
+        hint="If you sell 5% more every month, enter 5."
+        value={inputs.growthRate}
+        min={-20}
+        max={50}
+        step={1}
+        suffix="%"
+        onChange={set('growthRate')}
+        testId="growthRate"
+      />
+    </div>
   );
 }
